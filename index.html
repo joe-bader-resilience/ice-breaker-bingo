@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ice Breaker Bingo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to bottom, #e0f7fa, #80deea);
+            background-size: cover;
+            color: #01579b;
+        }
+
+        h1 {
+            margin-top: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px #ffffff;
+        }
+
+        .bingo-container {
+            position: relative;
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 2px solid #0277bd;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .counter-container {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .bingo-board {
+            display: grid;
+            grid-template-columns: repeat(5, 150px);
+            grid-template-rows: repeat(5, 150px);
+            gap: 10px;
+        }
+
+        .bingo-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 150px;
+            height: 150px;
+            background-color: #ffffff;
+            border: 2px solid #01579b;
+            cursor: pointer;
+            user-select: none;
+            text-align: center;
+            padding: 10px;
+            box-sizing: border-box;
+            position: relative;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .bingo-cell input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .bingo-cell span {
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            word-wrap: break-word;
+            height: 100%;
+            width: 100%;
+        }
+
+        .bingo-cell input:checked + span {
+            background-color: #80deea;
+            color: #01579b;
+            width: 100%;
+            height: 100%;
+            line-height: normal;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+        }
+
+        .celebration {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .celebration h1 {
+            font-size: 5em;
+            animation: celebrate 1s infinite;
+        }
+
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .bingo-container .bingo-cell input:checked + span {
+            animation: checkBingo 0.5s;
+        }
+
+        @keyframes checkBingo {
+            0% { background-color: #80deea; }
+            100% { background-color: #4dd0e1; }
+        }
+
+        .bingo-container.bingo-complete .bingo-board {
+            display: none;
+        }
+
+        .bingo-container.bingo-complete + .celebration {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ice Breaker Bingo</h1>
+    <div class="bingo-container">
+        <div class="counter-container">
+            <span>Squares Highlighted: </span><span id="highlightedCount">0</span>
+        </div>
+        <div class="bingo-board" id="bingoBoard">
+            <!-- Bingo cells will be populated here by JavaScript -->
+        </div>
+    </div>
+    <div class="celebration">
+        <h1>Bingo! 🎉</h1>
+    </div>
+    <script>
+        const icebreakers = [
+            "Knows how to read tarot", "Knows sign language", "Appeared in a movie", "Met a celebrity",
+            "Went viral online", "Owns a gaming computer", "Knows how to surf", "Has an unusual family tradition",
+            "Loves true crime podcasts", "Likes pineapple on pizza", "Proposed to spouse in public", "Loves roller coasters",
+            "Does Yoga", "Can do a cartwheel", "Rides horses", "Knows martial arts", "Started a club", "Attended a concert this year",
+            "Has been to the Olympics", "Has a pen pal", "Has been on a reality show", "Spelling bee champ", "Has been on a road trip",
+            "Sends holiday cards", "Screams during scary movies", "Loves karaoke", "Was lead in a play", "Can hula hoop",
+            "Can bench press 150+ lbs", "Good at escape rooms", "Has been skydiving", "Won an eating competition", "Wearing funny socks",
+            "Won at a casino", "Never flown on an airplane", "Never learned to ride a bike", "Collects something",
+            "Goes all-out on holiday decorating", "Recently handmade a gift", "Received an award", "Has performed in public", "Has a phobia",
+            "Has a BFF from high school", "Currently a student", "Took a how-to class recently", "Listens to podcasts",
+            "Travels often", "Attended high school reunion", "Has food allergies", "Belongs to a club", "Named after a relative",
+            "Has a scar", "Has broken a bone", "Has a nickname", "Birthday is on a holiday", "Has a bucket list",
+            "Makes New Year’s resolutions", "Good cook", "Taught a class", "Had a secret admirer", "Helped a stranger",
+            "Got help from a stranger", "Worked at a family business", "Visited 4+ continents", "Took dance lessons", "Speaks 2+ languages",
+            "Can code", "Won a contest", "Gardens", "Traveled in the last year", "Can bake a cake from scratch",
+            "Knows the whole periodic table", "Can do basic car repairs", "Was in a wedding party this year", "Owns cryptocurrency",
+            "Invests in the stock market", "Climbed a mountain", "Moved in the past year", "Owns a boat", "Has a big backyard",
+            "Digital nomad", "Notary public", "Lives near a coffee shop", "Lives in a rural area", "Can drive manual transmission",
+            "Reads newspapers", "Does stand up comedy", "Owns a vacation house", "Started a business", "Firefighter or EMT",
+            "Has been in a hot air balloon", "Has taken a cruise", "Won a race", "Ran in a marathon", "Has a side hustle",
+            "Regularly writes reviews", "Watches documentaries", "Knows calligraphy", "Brews beer", "Built an app", "Mixologist",
+            "Prefers remote work", "Prefers working in office", "Has a snack stash", "Drinks 3+ cups coffee a day",
+            "Has worked here 3+ years", "Has worked in another industry", "Has a work music playlist", "Has a favorite pen",
+            "Has a messy desk", "Has 0 unread emails", "Prefers working in the morning", "Prefers working at night",
+            "Has worked here 2+ years", "Has worked here <1 year", "Has had an 1hr+ commute", "Manager", "Runs errands during lunch break",
+            "Buys coffee every morning", "Buys lunch every day", "Played prank on a coworker", "Works out before work",
+            "Works out after work", "Has received a Shout Out", "Worked for a rival company", "Mentor", "Attends networking events",
+            "Part of a professional group", "Organized a work outing", "Going on vacation soon", "Was promoted this year",
+            "Switched departments this year", "Good at interviews", "Bad at interviews", "Hired an employee", "Led a project",
+            "Planned a work party", "Only child", "Twin or triplet", "Comes from a big family", "Military family", "Parent",
+            "Grandparent", "Lived in another country", "Hand-made an outfit", "In a sports league", "Plays an instrument",
+            "Volunteers regularly", "Read 10+ books this year", "Wears contacts", "Has a cat", "Has a dog", "Has an exotic pet",
+            "Runs regularly", "Has an unusual hobby", "Lives with roommates", "Has a tattoo", "Is left-handed", "Has officiated a wedding",
+            "Has been scuba diving", "Double-jointed", "Uses a paper planner", "Vegetarian", "Introvert", "Extrovert", "Creates art",
+            "Enjoys meeting new people", "Met partner through online dating", "Writer", "Got engaged this year", "Got married this year",
+            "Bought a house this year", "Bought a car this year", "Had a baby this year", "Became debt-free this year",
+            "Quit a bad habit recently", "Has a Masters or PhD", "Has a sweet tooth", "Has a hidden talent", "Child of immigrants"
+        ];
+
+        // Function to shuffle an array
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Shuffle the icebreakers array and select the first 25
+        const selectedIcebreakers = shuffle(icebreakers).slice(0, 25);
+
+        // Populate the bingo board with the selected icebreakers
+        const bingoBoard = document.getElementById('bingoBoard');
+        selectedIcebreakers.forEach(fact => {
+            const cell = document.createElement('label');
+            cell.className = 'bingo-cell';
+            cell.innerHTML = `
+                <input type="checkbox" onclick="updateCounter()">
+                <span>${fact}</span>
+            `;
+            bingoBoard.appendChild(cell);
+        });
+
+        function updateCounter() {
+            const checkboxes = document.querySelectorAll('.bingo-cell input:checked');
+            document.getElementById('highlightedCount').textContent = checkboxes.length;
+        }
+    </script>
+</body>
+</html>
