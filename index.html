@@ -57,7 +57,7 @@
             cursor: pointer;
             user-select: none;
             text-align: center;
-            padding: 10px;
+            padding: 5px;
             box-sizing: border-box;
             position: relative;
             transition: background-color 0.3s, color 0.3s;
@@ -77,23 +77,89 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            overflow-wrap: break-word;
             word-wrap: break-word;
-            height: 100%;
+            hyphens: auto;
+            text-align: center;
             width: 100%;
+            height: 100%;
         }
 
         .bingo-cell input:checked + span {
             background-color: #80deea;
             color: #01579b;
-            width: 100%;
-            height: 100%;
             line-height: normal;
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 5px;
+        }
+
+        .wildcard {
+            background-color: #80deea !important;
+            color: #01579b;
+            cursor: default;
+        }
+
+        .gold-star {
+            background-color: transparent;
+            border: none;
+            cursor: default;
+            position: relative;
+        }
+
+        .gold-star span {
+            background-color: transparent;
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .star {
+            display: inline-block;
+            position: relative;
+            width: 0px;
+            height: 0px;
+            border-right: 50px solid transparent;
+            border-bottom: 35px solid #FFD700;
+            border-left: 50px solid transparent;
+            transform: rotate(35deg);
+        }
+
+        .star:before {
+            border-bottom: 35px solid #FFD700;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            position: absolute;
+            height: 0;
+            width: 0;
+            top: -25px;
+            left: -35px;
+            display: block;
+            content: '';
+            transform: rotate(-35deg);
+        }
+
+        .star:after {
+            position: absolute;
+            display: block;
+            color: #FFD700;
+            top: 3px;
+            left: -50px;
+            width: 0;
+            height: 0;
+            border-right: 50px solid transparent;
+            border-bottom: 35px solid #FFD700;
+            border-left: 50px solid transparent;
+            transform: rotate(-70deg);
+            content: '';
         }
 
         .celebration {
@@ -108,6 +174,7 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            z-index: 1000;
         }
 
         .celebration h1 {
@@ -136,19 +203,40 @@
         .bingo-container.bingo-complete + .celebration {
             display: flex;
         }
+
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: red;
+            animation: confetti-fall 4s infinite;
+        }
+
+        .confetti:nth-child(2) { left: 25%; animation-duration: 4.5s; }
+        .confetti:nth-child(3) { left: 75%; animation-duration: 3.5s; }
+        .confetti:nth-child(4) { left: 35%; animation-duration: 4.2s; }
+        .confetti:nth-child(5) { left: 65%; animation-duration: 3.8s; }
+
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); }
+            100% { transform: translateY(100vh) rotate(720deg); }
+        }
     </style>
 </head>
 <body>
     <h1>Ice Breaker Bingo</h1>
-    <div class="bingo-container">
+    <div class="bingo-container" id="bingoContainer">
         <div class="counter-container">
-            <span>Squares Highlighted: </span><span id="highlightedCount">0</span>
+            <span>Squares: </span><span id="highlightedCount">0</span>
+            <span style="margin-left: 20px;">Bingos: </span><span id="bingoCount">0</span>
         </div>
         <div class="bingo-board" id="bingoBoard">
             <!-- Bingo cells will be populated here by JavaScript -->
         </div>
     </div>
-    <div class="celebration">
+    <div class="celebration" id="celebration" onclick="hideCelebration()">
         <h1>Bingo! 🎉</h1>
     </div>
     <script>
@@ -201,25 +289,105 @@
             return array;
         }
 
-        // Shuffle the icebreakers array and select the first 25
-        const selectedIcebreakers = shuffle(icebreakers).slice(0, 25);
+        // Shuffle the icebreakers array and select the first 24
+        const selectedIcebreakers = shuffle(icebreakers).slice(0, 24);
 
         // Populate the bingo board with the selected icebreakers
         const bingoBoard = document.getElementById('bingoBoard');
-        selectedIcebreakers.forEach(fact => {
-            const cell = document.createElement('label');
-            cell.className = 'bingo-cell';
-            cell.innerHTML = `
-                <input type="checkbox" onclick="updateCounter()">
-                <span>${fact}</span>
-            `;
-            bingoBoard.appendChild(cell);
-        });
+        let cellIndex = 0;
+        let board = Array(25).fill(false);
+
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                const cell = document.createElement('label');
+                cell.className = 'bingo-cell';
+                if (row === 2 && col === 2) {
+                    cell.classList.add('gold-star');
+                    cell.innerHTML = `<span><div class="star"></div></span>`;
+                    board[row * 5 + col] = true; // Free space
+                } else {
+                    cell.innerHTML = `
+                        <input type="checkbox" onclick="handleClick(${row}, ${col})">
+                        <span>${selectedIcebreakers[cellIndex]}</span>
+                    `;
+                    cellIndex++;
+                }
+                bingoBoard.appendChild(cell);
+            }
+        }
+
+        let celebratedLines = new Set();
+        let bingoCount = 0;
+
+        function handleClick(row, col) {
+            const index = row * 5 + col;
+            board[index] = !board[index];
+            updateCounter();
+            checkBingo();
+        }
 
         function updateCounter() {
             const checkboxes = document.querySelectorAll('.bingo-cell input:checked');
             document.getElementById('highlightedCount').textContent = checkboxes.length;
         }
+
+        function createConfetti() {
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                document.body.appendChild(confetti);
+            }
+        }
+
+        function hideCelebration() {
+            document.getElementById('celebration').style.display = 'none';
+            document.querySelectorAll('.confetti').forEach(confetti => confetti.remove());
+        }
+
+        function checkBingo() {
+            const winningLines = [
+                [0, 1, 2, 3, 4],
+                [5, 6, 7, 8, 9],
+                [10, 11, 12, 13, 14],
+                [15, 16, 17, 18, 19],
+                [20, 21, 22, 23, 24],
+                [0, 5, 10, 15, 20],
+                [1, 6, 11, 16, 21],
+                [2, 7, 12, 17, 22],
+                [3, 8, 13, 18, 23],
+                [4, 9, 14, 19, 24],
+                [0, 6, 12, 18, 24],
+                [4, 8, 12, 16, 20]
+            ];
+
+            for (const [index, line] of winningLines.entries()) {
+                if (line.every(i => board[i]) && !celebratedLines.has(index)) {
+                    showCelebration();
+                    celebratedLines.add(index);
+                    bingoCount++;
+                    updateBingoCount();
+                    break;
+                }
+            }
+        }
+
+        function showCelebration() {
+            document.getElementById('celebration').style.display = 'flex';
+            createConfetti();
+        }
+
+        function updateBingoCount() {
+            document.getElementById('bingoCount').textContent = bingoCount;
+        }
+
+        document.body.addEventListener('click', (e) => {
+            if (e.target.id === 'celebration') {
+                hideCelebration();
+            }
+        });
     </script>
 </body>
 </html>
