@@ -122,44 +122,9 @@
             justify-content: center;
         }
 
-        .star {
-            display: inline-block;
-            position: relative;
-            width: 0px;
-            height: 0px;
-            border-right: 50px solid transparent;
-            border-bottom: 35px solid #FFD700;
-            border-left: 50px solid transparent;
-            transform: rotate(35deg);
-        }
-
-        .star:before {
-            border-bottom: 35px solid #FFD700;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            position: absolute;
-            height: 0;
-            width: 0;
-            top: -25px;
-            left: -35px;
-            display: block;
-            content: '';
-            transform: rotate(-35deg);
-        }
-
-        .star:after {
-            position: absolute;
-            display: block;
-            color: #FFD700;
-            top: 3px;
-            left: -50px;
-            width: 0;
-            height: 0;
-            border-right: 50px solid transparent;
-            border-bottom: 35px solid #FFD700;
-            border-left: 50px solid transparent;
-            transform: rotate(-70deg);
-            content: '';
+        .gold-star svg {
+            width: 80%;
+            height: 80%;
         }
 
         .celebration {
@@ -303,7 +268,7 @@
                 cell.className = 'bingo-cell';
                 if (row === 2 && col === 2) {
                     cell.classList.add('gold-star');
-                    cell.innerHTML = `<span><div class="star"></div></span>`;
+                    cell.innerHTML = `<span><svg width="80%" height="80%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z" fill="#FFD700"/></svg></span>`;
                     board[row * 5 + col] = true; // Free space
                 } else {
                     cell.innerHTML = `
